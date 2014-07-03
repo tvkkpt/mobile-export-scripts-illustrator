@@ -1,8 +1,6 @@
 ﻿/**
  * Author: austynmahoney (https://github.com/austynmahoney)
  */
-var selectedExportOptions = {};
-
 var androidExportOptions = [{
   name: "mdpi",
   scaleFactor: 100,
@@ -38,12 +36,18 @@ var iosExportOptions = [{
 var folder = Folder.selectDialog("Select export directory");
 var document = app.activeDocument;
 
+var selectedExportOptions = {};
+var selectedArtboards = new Array(document.artboards.length);
+
 if (document && folder) {
   var dialog = new Window("dialog", "Select export sizes");
   var osGroup = dialog.add("group");
 
   var androidCheckboxes = createSelectionPanel("Android", androidExportOptions, osGroup);
   var iosCheckboxes = createSelectionPanel("iOS", iosExportOptions, osGroup);
+  
+  var artGroup = dialog.add("group");
+  createArtboardSelectionPanel(artGroup);
 
   var buttonGroup = dialog.add("group");
   var okButton = buttonGroup.add("button", undefined, "Export");
@@ -78,22 +82,24 @@ function exportToFile(scaleFactor, resIdentifier, os) {
   }
 
   for (i = document.artboards.length - 1; i >= 0; i--) {
-    document.artboards.setActiveArtboardIndex(i);
-    ab = document.artboards[i];
+    if (selectedArtboards[i]) {
+      document.artboards.setActiveArtboardIndex(i);
+      ab = document.artboards[i];
 
-    if (os === "android")
-      file = new File(expFolder.fsName + "/" + ab.name + ".png");
-    else if (os === "ios")
-      file = new File(expFolder.fsName + "/" + ab.name + resIdentifier + ".png");
+      if (os === "android")
+        file = new File(expFolder.fsName + "/" + ab.name + ".png");
+      else if (os === "ios")
+        file = new File(expFolder.fsName + "/" + ab.name + resIdentifier + ".png");
 
-    options = new ExportOptionsPNG24();
-    options.transparency = true;
-    options.artBoardClipping = true;
-    options.antiAliasing = true;
-    options.verticalScale = scaleFactor;
-    options.horizontalScale = scaleFactor;
+      options = new ExportOptionsPNG24();
+      options.transparency = true;
+      options.artBoardClipping = true;
+      options.antiAliasing = true;
+      options.verticalScale = scaleFactor;
+      options.horizontalScale = scaleFactor;
 
-    document.exportFile(file, ExportType.PNG24, options);
+      document.exportFile(file, ExportType.PNG24, options);
+    }
   }
 };
 
@@ -114,3 +120,21 @@ function createSelectionPanel(name, array, parent) {
     };
   }
 };
+
+function createArtboardSelectionPanel(parent) {
+  var panel = parent.add("panel", undefined, "Artboards");
+  panel.alignChildren = "left";
+  
+  for (i = document.artboards.length - 1; i >= 0; i--) {
+    var cb = panel.add("checkbox", undefined, "\u00A0" + document.artboards[i].name);
+    cb.item = i;
+    cb.onClick = function() {
+      if (this.value) {
+        selectedArtboards[this.item] = true;
+      } else {
+        selectedArtboards[this.item] = false;
+      }
+    }
+  }
+}
+
